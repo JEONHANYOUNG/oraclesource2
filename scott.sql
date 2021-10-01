@@ -1604,6 +1604,7 @@ SET LOC='SEOUL'
 WHERE DEPTNO = 30;
 
 commit;
+<<<<<<< HEAD
 
 
 -- DDL(데이터 정의어)
@@ -1700,21 +1701,4 @@ desc member;
 alter table member modify bigo varchar2(30);
 
 alter table member rename column bigo to remark;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
