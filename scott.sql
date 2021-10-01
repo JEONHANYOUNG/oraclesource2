@@ -1702,3 +1702,4 @@ alter table member modify bigo varchar2(30);
 
 alter table member rename column bigo to remark;
 
+select * from member;
