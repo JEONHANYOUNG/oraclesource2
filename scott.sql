@@ -1604,7 +1604,7 @@ SET LOC='SEOUL'
 WHERE DEPTNO = 30;
 
 commit;
-<<<<<<< HEAD
+
 
 
 -- DDL(데이터 정의어)
@@ -1687,12 +1687,13 @@ truncate table EMP_RENAME;
 
 
 create table member(
-        id char (8),
+        id char(8),
         name varchar2(10),
         addr varchar2(50),
         nation char(4),
         email varchar2(50),
-        age number(7,2));
+        age number(7)
+        );
         
 alter table member add bigo varchar2(20);
 
@@ -1702,4 +1703,454 @@ alter table member modify bigo varchar2(30);
 
 alter table member rename column bigo to remark;
 
-select * from member;
+
+-- 뷰(view) : 가상테이블(특정 테이블이 있는 것처럼 행동)
+-- 목적 : 편리성(Select 문의 복잡도를 완화)
+--        보안성(테이블의 특정 열을 노출하고 싶지 않을 경우, 개인정보 같은 경우)
+
+--- CREATE [OR REPLACE] VIEW 뷰이름 (열이름1,열이름2...)
+--- AS (저장할 SELECT 문)
+
+-- 뷰 생성
+Create view vm_emp20 as 
+(select 
+    empno,
+    ename,
+    job,
+    deptno 
+ from 
+    emp 
+ where 
+    deptno=20);
+
+select * from vm_emp20;
+
+-- EMP 테이블의 전체 내용을 이용해 VIEW 생성
+CREATE VIEW VM_EMPALL AS SELECT * FROM EMP;
+
+-- VM_EMPALL 에 있는 특정 사원 정보를 수정
+SELECT * FROM  vm_empall;
+
+UPDATE VM_EMPALL
+SET JOB = 'SALESMAN'
+WHERE EMPNO=7369;
+
+SELECT * FROM EMP;
+
+-- 삽입
+INSERT INTO VM_EMPALL VALUES(6666,'KIM','MANAGER',NULL,'20/10/05',2650,null,20);
+
+
+-- 뷰 생성(수정 불가)
+CREATE VIEW VM_EMP30read AS 
+    SELECT 
+        EMPNO,
+        ENAME,
+        JOB
+    FROM 
+        EMP 
+    WHERE
+        DEPTNO=30 
+WITH READ ONLY;
+
+
+SELECT 
+    * 
+FROM 
+    EMP;
+
+
+-- 뷰 삭제
+DROP VIEW VM_EMPALL;
+
+
+-- 시퀀스(수업에서 자주 사용)
+-- 오라클 데이터 베이스에서 특정 규칙에 맞는 연속 숫자 생성(글 번호나 상품 번호 명시할 때)
+-- 시퀀스 생성 
+CREATE SEQUENCE SEQ_DEPT_SEQUENCE -- 단독 객체(SEQ_DEOT_SEQUENCE)
+INCREMENT BY 10  -- 옵션(기본값은 1)
+START WITH 10 -- 옵션(기본값은 1)
+MAXVALUE 90 -- 옵션(기본값은 10의 27승)
+MINVALUE 0 -- 옵션(기본값은 1)
+NOCYCLE CACHE 2; -- 옵션(CYCLE OR NOCYCLE, CACHE 는 미리 발급해 놓을 수)
+
+-- DEPT 테이블에서 부서번호를 10으로 시작해서 90까지 넣고 싶을 때
+CREATE TABLE DEPT_SEQUENCE AS SELECT * FROM DEPT WHERE 1<>1;
+
+INSERT INTO dept_sequence(DEPTNO,DNAME,LOC)
+VALUES(SEQ_DEPT_SEQUENCE.nextval,'DATABASE','SEOUL');
+
+-- 시퀀스 수정
+ALTER SEQUENCE SEQ_DEPT_SEQUENCE
+INCREMENT BY 3
+MAXVALUE 99
+CYCLE;
+
+SELECT * FROM dept_sequence;
+
+-- 시퀀스 삭제
+DROP SEQUENCE SEQ_DEPT_SEQUENCE;
+
+-- 인덱스 : 빠른 검색
+-- 데이터 검색 TABLE Full Scan, Index Scan
+
+-- 인덱스 생성
+Create index idx_emp_sal
+on emp(sal); -- sql 튜닝
+
+-- 제약조건을 사용한 테이블 생성
+create table userTBL(
+  userid char(8) not null primary key,
+  username varchar(10) not null);
+
+-- 인덱스 삭제
+DROP index idx_EMP_SAL;
+
+-- 실습 문제 
+
+-- 문1) ① EMP 테이블과 같은 구조의 데이터를 저장하는 EMPIDX 테이블을 생성하시오.
+create TABLE EMPIDX as select * FROM emp;
+
+--      ② 생성한 EMPIDX 테이블의 EMPNO 열에 IDX_EMPIDX_EMPNO 인덱스를 생성하시오.
+create INDEX IDX_EMPIDX_EMPNO ON EMPIDX(EMPNO);
+
+
+-- 문2) 실습 1에서 생성한 EMPIDX 테이블의 데이터 중 급여가 1500 초과인 사원들만
+-- 출력하는 EMPIDX_OVER15K 뷰를 생성하시오.
+-- (사원번호, 사원이름, 직책, 부서번호,급여, 추가수당 열을 가지고 있다)
+create view EMPIDX_OVER15K AS (SELECT EMPNO,ENAME,JOB,DEPTNO,SAL,COMM FROM EMPIDX WHERE SAL >=1500);
+
+
+-- 문3) ① DEPT 테이블과 같은 열과 행 구성을 가지는 DEPTSEQ 테이블을 작성하시오.
+create TABLE DEPTSEQ AS SELECT * FROM DEPT;
+
+--      ② 생성한 DEPTSEQ 테이블의 DEPTNO 열에 사용할 시퀀스를 아래에 제시된 특성에 
+--         맞춰 생성해 보시오.
+CREATE SEQUENCE DEPTSEQ_SEQUENCE 
+START WITH 1 
+INCREMENT BY 1
+MAXVALUE 99
+MINVALUE 1
+NOCYCLE NOCACHE;
+
+-- 부서 번호의 시작값 : 1
+-- 부서 번호의 증가 : 1
+-- 부서 번호의 최댓값 : 99
+-- 부서 번호의 최솟값 : 1
+-- 부서 번호의 최댓값에서 생성 중단
+-- 캐시 없음
+
+
+-- ③ 마지막으로 생성한 DEPTSEQ를 사용하여 아래쪽과 같이 세 개 부서를 차례대로 추가한다.
+-- 부서명 : database / web / moblie
+-- 위치 : seoul / busan / ilsan
+
+INSERT INTO DEPTSEQ VALUES(DEPTSEQ_SEQUENCE.NEXTVAL,'DATABASE','SEOUL');
+INSERT INTO DEPTSEQ VALUES(DEPTSEQ_SEQUENCE.NEXTVAL,'WEB','BUSAN');
+INSERT INTO DEPTSEQ VALUES(DEPTSEQ_SEQUENCE.NEXTVAL,'MOBILE','ILSAN');
+
+SELECT * FROM DEPTSEQ;
+
+
+-- 제약 조건
+-- 데이터 무결성 유지
+
+-- 1) NOT NULL : NULL의 저장을 허용하지 않음 
+create TABLE TABLE_NOTNULL(
+    LOGIN_ID VARCHAR2(20) NOT NULL,
+    LOGIN_PWD VARCHAR2(20) NOT NULL,
+    TEL VARCHAR2(20));
+
+INSERT INTO TABLE_NOTNULL VALUES('TEST_01',NULL,'010-1234-5678');
+
+INSERT INTO TABLE_NOTNULL(LOGIN_ID,LOGIN_PWD) VALUES('TEST_01','TEL_01');
+
+-- 부적합한 식별자
+UPDATE TABLE_NOTNULL
+SET LOGIGN_PWD = NULL
+WHERE LOGIN_ID='TEST_01';
+
+
+create TABLE TABLE_NOTNULL2(
+    LOGIN_ID VARCHAR2(20) CONSTRAINT TBLNN2_LGNID_NN NOT NULL,
+    LOGIN_PWD VARCHAR2(20) CONSTRAINT TBLNN2_LGNPWD_NN NOT NULL,
+    TEL VARCHAR2(20));
+
+-- 제약조건 확인
+--  현재 데이터베이스에 접속한 사용자가 소유한 객체 정보 : USER_ 로 시작
+
+SELECT OWNER,CONSTRAINT_NAME,CONSTRAINT_TYPE,TABLE_NAME
+FROM USER_CONSTRAINTS
+WHERE TABLE_NAME= 'TABLE_NOTNULL2';
+
+-- 이미 생성한 테이블에 제약 조건 지정
+
+-- TABLE_NOTNULL 에 TEL 컬럼에 NOT NULL 추가
+-- 오류 보고 -
+-- ORA-02296: (C##SCOTT.) 사용으로 설정 불가 - 널 값이 발견되었습니다.
+SELECT * FROM TABLE_NOTNULL;
+ALTER TABLE TABLE_NOTNULL MODIFY(TEL NOT NULL);
+
+-- UPDATE 를 통해 기존의 NULL 컬럼을 제거
+UPDATE TABLE_NOTNULL
+SET TEL ='010-1234-5678'
+WHERE LOGIN_ID='TEST_01';
+
+SELECT * FROM TABLE_NOTNULL2;
+ALTER TABLE TABLE_NOTNULL2 MODIFY(TEL CONSTRAINT TBLNN_TEL_NN NOT NULL);
+
+-- 제약 조건 이름 변경
+
+ALTER TABLE TABLE_NOTNULL2 rename CONSTRAINT TBLNN_TEL_NN TO TBLNN2_TEL_NN;
+
+
+-- 제약 조건 삭제
+ALTER TABLE TABLE_NOTNULL2 DROP CONSTRAINT TBLNN2_TEL_NN;
+
+
+-- 2) UNIQUE : 중복되지 않는 값
+create TABLE TABLE_UNIQUE(
+    LOGIN_ID VARCHAR2(20) UNIQUE,
+    LOGIN_PWD VARCHAR2(20) NOT NULL,
+    TEL VARCHAR2(20));
+    
+SELECT OWNER,CONSTRAINT_NAME,CONSTRAINT_TYPE,TABLE_NAME
+FROM USER_CONSTRAINTS
+WHERE TABLE_NAME= 'TABLE_UNIQUE'; 
+
+INSERT INTO TABLE_UNIQUE
+VALUES('TEST_ID-01','PWD081','010-1234-5678');
+    
+-- 무결성 제약 조건(C##SCOTT.SYS_C007412)에 위배
+INSERT INTO TABLE_UNIQUE
+VALUES('TEST_ID-01','PWD082','010-1234-5679');   
+
+-- UNIQUE 제약조건에 NULL 삽입 가능
+INSERT INTO TABLE_UNIQUE
+VALUES(NULL,'PWD082','010-1234-5679');   
+
+create TABLE TABLE_UNIQUE2(
+    LOGIN_ID VARCHAR2(20) CONSTRAINT TBLUNQ2_LGNID_UNQ UNIQUE,
+    LOGIN_PWD VARCHAR2(20) CONSTRAINT TBLUNQ2_LGNPWD_UNQ NOT NULL,
+    TEL VARCHAR2(20));
+    
+SELECT OWNER,CONSTRAINT_NAME,CONSTRAINT_TYPE,TABLE_NAME
+FROM USER_CONSTRAINTS
+WHERE TABLE_NAME LIKE 'TABLE_UNIQUE%';
+
+ALTER TABLE TABLE_UNIQUE MODIFY(TEL UNIQUE);
+
+-- 3) PRIMARY KEY : NOT NULL + UNIQUE
+--                : 테이블 당 하나만 존재
+--                : INDEX 자동 생성
+--                : 각 행을 식별하는 용도
+
+create TABLE TABLE_PK(
+    LOGIN_ID VARCHAR2(20) PRIMARY KEY,
+    LOGIN_PWD VARCHAR2(20) NOT NULL,
+    TEL VARCHAR2(20));
+
+-- 삭제할 조건
+DELETE FROM TABLE_PK WHERE LOGIN_ID='TEST_01';
+
+INSERT INTO TABLE_PK
+VALUES('TEST_01','OWD01','010-1234-7896');
+
+-- 무결성 제약 조건(C##SCOTT.SYS_C007420)에 위배됩니다
+INSERT INTO TABLE_PK
+VALUES('TEST_01','OWD02','010-1234-7896');
+
+-- 테이블에는 하나의 기본 키만 가질 수 있습니다.
+create TABLE TABLE_PK2(
+    LOGIN_ID VARCHAR2(20) PRIMARY KEY,
+    LOGIN_PWD VARCHAR2(20) PRIMARY KEY,
+    TEL VARCHAR2(20));
+    
+
+create TABLE TABLE_PK2(
+    LOGIN_ID VARCHAR2(20) CONSTRAINT TBLPK2_LGNID_PK PRIMARY KEY,
+    LOGIN_PWD VARCHAR2(20) CONSTRAINT TBLPK2_LGNPWD_NN NOT NULL,
+    TEL VARCHAR2(20));    
+    
+    
+-- 제약조건을 지정하는 다른 방식
+CREATE TABLE TABLE_CON(
+    COL1 VARCHAR2(20),
+    COL2 VARCHAR2(20),
+    COL3 VARCHAR2(20),
+    PRIMARY KEY(COL1),
+    CONSTRAINT TBLCON_UNQ UNIQUE (COL2));
+    
+    
+-- 4) FOREIGN KEY : 외래키
+--                : 서로 다른 테이블 간 관계 정의
+--                : 특정 테이블에서 PK(DEPTNO => 외래키) 제약조건을 지정한 열을 다른 테이블의 특정 열에서 참조
+
+CREATE TABLE DEPT_FK(
+    DEPTNO NUMBER(2) CONSTRAINT DEPTFK_DEPTNO_PK PRIMARY KEY,
+    DNAME VARCHAR2(14),
+    LOC VARCHAR2(13));
+    
+CREATE TABLE EMP_FK(
+    EMPNO NUMBER(4) CONSTRAINT EMPFK_EMPNO_PK PRIMARY KEY,
+    ENAME VARCHAR2(10),
+    JOB VARCHAR2(9),
+    MGR VARCHAR(4),
+    HIREDATE DATE,
+    SAL NUMBER(7,2),
+    COMM NUMBER(7,2),
+    DEPTNO NUMBER(2) CONSTRAINT EMPFK_DEPTNO_FK REFERENCES DEPT_FK(DEPTNO));
+
+
+-- 무결성 제약조건(C##SCOTT.EMPFK_DEPTNO_FK)이 위배되었습니다
+-- 부모 키가 없습니다
+INSERT INTO EMP_FK 
+VALUES(9999, 'TEST_NAME','TEST_JOB',NULL,'21-10-05',3000,NULL,10); 
+
+-- 외래키 수행 순서가 정해져 있음
+-- 부모 테이블에 해당하는 데이터 삽입
+-- 자식 테이블 데이터 삽입
+
+INSERT INTO DEPT_FK VALUES(10,'DATABASE','SEOUL'); -- 부모 키
+INSERT INTO EMP_FK -- 자식 키
+VALUES(9999, 'TEST_NAME','TEST_JOB',NULL,'21-10-05',3000,NULL,10); 
+
+
+-- 외래 키 참조 행 데이터 삭제
+-- 자식 테이블에 해당하는 데이터 삭제
+-- 부모 케이블에 해당하는 데이터 삭제
+
+-- 자식 레코드가 발견
+DELETE FROM DEPT_FK WHERE DEPTNO =10;
+
+
+DELETE FROM EMP_FK WHERE DEPTNO =10; -- 자식 키
+DELETE FROM DEPT_FK WHERE DEPTNO =10; -- 부모 키
+
+
+-- 데이터 삭제 시 삭제할 데이터를 참조하는 처리를 어떻게 할 것인지 결정
+ -- ON DELETE CASCADE : 열 데이터 삭제시 이 데이터를 참조하고 있는 데이터도 함께 삭제
+ 
+CREATE TABLE DEPT_FK2(
+    DEPTNO NUMBER(2) CONSTRAINT DEPTFK2_DEPTNO_PK PRIMARY KEY,
+    DNAME VARCHAR2(14),
+    LOC VARCHAR2(13));
+    
+CREATE TABLE EMP_FK2(
+    EMPNO NUMBER(4) CONSTRAINT EMPFK2_EMPNO_PK PRIMARY KEY,
+    ENAME VARCHAR2(10),
+    JOB VARCHAR2(9),
+    MGR VARCHAR(4),
+    HIREDATE DATE,
+    SAL NUMBER(7,2),
+    COMM NUMBER(7,2),
+    DEPTNO NUMBER(2) CONSTRAINT EMPFK2_DEPTNO_FK REFERENCES DEPT_FK2(DEPTNO) ON DELETE CASCADE);
+    
+
+INSERT INTO DEPT_FK2 VALUES(10,'DATABASE','SEOUL'); -- 부모 키
+INSERT INTO EMP_FK2 -- 자식 키
+VALUES(9999, 'TEST_NAME','TEST_JOB',NULL,'21-10-05',3000,NULL,10); 
+
+DELETE FROM DEPT_FK2 WHERE DEPTNO = 10;
+
+
+SELECT * FROM DEPT_FK2;
+SELECT * FROM EMP_FK2;
+
+-- ON DELETE SET NULL : 열 데이터를 삭제할 때 이 데이터를 참조하는 데이터를 NULL 수정
+
+
+CREATE TABLE EMP_FK3(
+    EMPNO NUMBER(4) CONSTRAINT EMPFK3_EMPNO_PK PRIMARY KEY,
+    ENAME VARCHAR2(10),
+    JOB VARCHAR2(9),
+    MGR VARCHAR(4),
+    HIREDATE DATE,
+    SAL NUMBER(7,2),
+    COMM NUMBER(7,2),
+    DEPTNO NUMBER(2) CONSTRAINT EMPFK3_DEPTNO_FK REFERENCES DEPT_FK2(DEPTNO) ON DELETE SET NULL);
+    
+INSERT INTO DEPT_FK2 VALUES(10,'DATABASE','SEOUL'); -- 부모 키
+INSERT INTO EMP_FK3 -- 자식 키
+VALUES(9999, 'TEST_NAME','TEST_JOB',NULL,'21-10-05',3000,NULL,10); 
+
+SELECT * FROM DEPT_FK2;
+SELECT * FROM EMP_FK3;
+
+
+DELETE FROM DEPT_FK2 WHERE DEPTNO = 10;
+
+-- 5) CHECK : 열에 저장할 수 있는 값의 범위 또는 패턴 정의
+--          : EX) 시간 0~23 숫자만 허용
+
+create TABLE TABLE_CHECK(
+    LOGIN_ID VARCHAR2(20) CONSTRAINT TBLCK_LGNID_PK PRIMARY KEY,
+    LOGIN_PWD VARCHAR2(20) CONSTRAINT TBLCK_LGNPWD_NN CHECK (LENGTH(LOGIN_PWD)>3),
+    TEL VARCHAR2(20));
+
+-- 체크 제약조건(C##SCOTT.TBLCK_LGNPWD_NN)이 위배
+INSERT INTO TABLE_CHECK VALUES('TEST_ID','123','010-1234-5678');
+
+INSERT INTO TABLE_CHECK VALUES('TEST_ID','1234','010-1234-5678'); -- 적어도 네자리로 명시
+
+
+-- 기본값을 지정 DEFAULT
+-- 특정 열에 저장할 값이 지정되지 않았을 경우에 입력되는 기본값
+create TABLE TABLE_DEFAULT(
+    LOGIN_ID VARCHAR2(20) CONSTRAINT TBLDF_LGNID_PK PRIMARY KEY,
+    LOGIN_PWD VARCHAR2(20) DEFAULT '1234',
+    TEL VARCHAR2(20));
+
+INSERT INTO TABLE_DEFAULT(LOGIN_ID,LOGIN_PWD)
+VALUES('TEST_ID','TEST_ID');    
+    
+INSERT INTO TABLE_DEFAULT(LOGIN_ID,TEL)
+VALUES('TEST_ID2','010-5689-1234');
+
+INSERT INTO TABLE_DEFAULT(LOGIN_ID,LOGIN_PWD,TEL)
+VALUES('TEST_ID3',NULL,'010-1234-1234');
+
+SELECT * FROM TABLE_DEFAULT;
+
+
+-- 실습
+
+-- 문 1) DEPT_CONST 테이블 생성 
+-- DEPT_CONST 테이블 생성
+-- DEPTNO 정수형 숫자, 길이 2, 제약조건 PRIMARY KEY 제약조건명 DEPTCONST_DEPTNO_PK
+-- DNAME 가변형 문자, 길이 14, 제약조건 UNIQUE 제약조건명 DEPTCONST_DEPTNO_UNQ
+-- LOC 가변형 문자, 길이 13, 제약조건 NOT NULL 제약조건명 DEPTCONST_LOC_NN
+
+CREATE TABLE DEPT_CONST(
+    DEPTNO NUMBER(2) CONSTRAINT DEPTCONST_DEPTNO_PK PRIMARY KEY,
+    DNAME VARCHAR2(14) CONSTRAINT DEPTCONST_DEPTNO_UNQ UNIQUE,
+    LOC VARCHAR2(13) CONSTRAINT DEPTCONST_LOC_NN NOT NULL
+    );
+
+
+-- 문 2) EMP_CONST 테이블 생성   
+-- EMPNO 정수형 숫자, 길이 2, 제약조건 PRIMARY KEY, 제약조건명 EMPCONST_DEPTNO_PK
+-- ENAME 가변형 문자, 길이 10, 제약조건 CONSTRAINT, 제약조건명 EMPCONST_DEPTNO_NN
+-- JOB 가변형 문자, 길이 9, 
+-- TEL 가변형 문자, 길이 20, 제약조건 UNIQUE, 제약조건명 EMPCONST_TEL_UNQ
+-- HIREDATE 날짜,
+-- SAL 정수형 날짜, 길이 7, 소수점 둘째자리까지 허용, 제약조건 CHECK(급여는 1000~9999만 입력가능)
+--  제약 조건명 EMPCONST_SAL_CHK
+-- COMM 정수형 문자, 길이 7, 소수점 둘째자리까지 허용
+-- DEPTNO 정수형 문자, 길이 2, 제약조건 FOREIGN KEY, 제약조건명 EMPCONST_DEPTNO_FK 
+-- (중요 : REFERENCES DEPT_CONST(DEPTNO 넣어주기)
+
+CREATE TABLE EMP_CONST(
+    EMPNO NUMBER(2) CONSTRAINT EMPCONST_DEPTNO_PK PRIMARY KEY,
+    ENAME VARCHAR2(10) CONSTRAINT EMPCONST_DEPTNO_NN NOT NULL,
+    JOB VARCHAR2(9),
+    TEL VARCHAR2(20) CONSTRAINT EMPCONST_TEL_UNQ UNIQUE,
+    HIREDATE DATE,
+    SAL NUMBER(7,2) CONSTRAINT EMPCONST_SAL_CHK CHECK(SAL BETWEEN 1000 AND 9999),
+    COMM NUMBER(7,2),
+    DEPTNO NUMBER(2) CONSTRAINT EMPCONST_DEPTNO_FK REFERENCES DEPT_CONST(DEPTNO)
+    );
+    
+    
+    
+    
