@@ -1767,7 +1767,7 @@ DROP VIEW VM_EMPALL;
 -- 시퀀스(수업에서 자주 사용)
 -- 오라클 데이터 베이스에서 특정 규칙에 맞는 연속 숫자 생성(글 번호나 상품 번호 명시할 때)
 -- 시퀀스 생성 
-CREATE SEQUENCE SEQ_DEPT_SEQUENCE -- 단독 객체(SEQ_DEOT_SEQUENCE)
+CREATE SEQUENCE SEQ_DEPT_SEQUENCE -- 단독 객체(SEQ_DEPT_SEQUENCE)
 INCREMENT BY 10  -- 옵션(기본값은 1)
 START WITH 10 -- 옵션(기본값은 1)
 MAXVALUE 90 -- 옵션(기본값은 10의 27승)
